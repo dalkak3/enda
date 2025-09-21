@@ -1,11 +1,12 @@
-// @ts-types="https://denopkg.com/dalkak3/enzo@0.1.1/src/type/mod.ts"
+// @ts-types="https://denopkg.com/dalkak3/enzo@da2212c/src/type/mod.ts"
 import {
     projectSchema,
     objectSchema,
     pictureSchema,
     soundSchema,
     blockSchema,
-} from "https://esm.sh/gh/dalkak3/enzo@0.1.1/src/type/mod.ts"
+    commentSchema
+} from "https://esm.sh/gh/dalkak3/enzo@da2212c/src/type/mod.ts"
 
 import { Block, Folder, Literal } from "./src/type.ts"
 
@@ -14,6 +15,7 @@ type Object_ = ReturnType<typeof objectSchema.parse>
 type Picture = ReturnType<typeof pictureSchema.parse>
 type Sound = ReturnType<typeof soundSchema.parse>
 type EntryBlock = ReturnType<typeof blockSchema.parse>
+type Comment = ReturnType<typeof commentSchema.parse>
 
 const meta =
 (record: Record<string, Literal>) => Block(
@@ -56,6 +58,18 @@ const Block_ =
         .map(x => x.map(Block_))
 ]
 
+const BlockGroup =
+(blockOrComments: (EntryBlock | Comment)[]): [] | [Block] => {
+    const blocks = blockOrComments
+        .filter(x => x.type != "comment") as EntryBlock[]
+
+    if (blocks.length == 0) return []
+
+    return blocks[0].type.startsWith("when_")
+        ? [[...Block_(blocks[0]), blocks.slice(1).map(Block_)]]
+        : [["when_void", blocks.map(Block_)]]
+}
+
 const Object_ =
 (object: Object_) => Folder(
     object.name,
@@ -68,10 +82,7 @@ const Object_ =
             width: object.entity.width,
             height: object.entity.height,
         }),
-        ...object.script.flatMap(blocks => blocks
-            .filter(x => x.type != "comment")
-            .map(x => Block_(x as EntryBlock))
-        ),
+        ...object.script.flatMap(BlockGroup),
     ],
 )
 
@@ -88,5 +99,9 @@ const Project =
 import { proj_57d79d29a76b6b017780b483 as proj } from "https://esm.sh/gh/dalkak3/ente@0.1.1/case/mod.ts?standalone"
 
 console.log(
-    Project(projectSchema.parse(proj))
+    JSON.stringify(
+        Project(projectSchema.parse(proj)),
+        undefined,
+        2,
+    )
 )
