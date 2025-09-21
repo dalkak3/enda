@@ -6,22 +6,29 @@ import {
     soundSchema,
 } from "https://esm.sh/gh/dalkak3/enzo@0.1.0/src/type/mod.ts"
 
-import { Block, Folder } from "./src/type.ts"
+import { Block, Folder, Literal } from "./src/type.ts"
 
 type Project = ReturnType<typeof projectSchema.parse>
 type Object_ = ReturnType<typeof objectSchema.parse>
 type Picture = ReturnType<typeof pictureSchema.parse>
 type Sound = ReturnType<typeof soundSchema.parse>
 
+const meta =
+(record: Record<string, Literal>) => Block(
+    "when init",
+    Object.entries(record)
+        .map(([k, v]) => Block(`set ${k}`, v)),
+)
+
 const Picture =
 (picture: Picture) => Folder(
     picture.name,
     [],
     [
-        Block("when init", [
-            Block("set width", picture.dimension.width),
-            Block("set height", picture.dimension.height),
-        ]),
+        meta({
+            width: picture.dimension.width,
+            height: picture.dimension.height,
+        }),
     ],
 )
 
@@ -30,14 +37,9 @@ const Sound =
     sound.name,
     [],
     [
-        Block("when init", [
-            Block("set src",
-                sound.fileurl
-                || sound.filename
-                || ""
-            ),
-            Block("set duration", sound.duration),
-        ]),
+        meta({
+            src: sound.fileurl || sound.filename || "",
+        }),
     ],
 )
 
@@ -49,10 +51,10 @@ const Object_ =
         ...object.sprite.sounds.map(Sound),
     ],
     [
-        Block("when init", [
-            Block("set width", object.entity.width),
-            Block("set height", object.entity.height),
-        ]),
+        meta({
+            width: object.entity.width,
+            height: object.entity.height,
+        }),
         // todo: object.script
     ],
 )
